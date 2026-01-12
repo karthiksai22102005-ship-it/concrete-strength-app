@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concrete Strength AI</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-cube"></i> ConcreteAI
+        </div>
+    </div>
+
+    <div class="card prediction-card">
+        <div class="card-header">
+            <h1><i class="fas fa-hard-hat"></i> Strength Predictor</h1>
+            <p>Enter parameters & press Enter to navigate</p>
+        </div>
+
+        <div class="input-grid">
+            <div class="input-group">
+                <label>Cement (kg/m³)</label>
+                <input type="number" class="nav-input" id="cement" placeholder="e.g. 540">
+            </div>
+            <div class="input-group">
+                <label>Blast Furnace Slag</label>
+                <input type="number" class="nav-input" id="slag" placeholder="e.g. 0">
+            </div>
+            <div class="input-group">
+                <label>Fly Ash</label>
+                <input type="number" class="nav-input" id="flyash" placeholder="e.g. 0">
+            </div>
+            <div class="input-group">
+                <label>Water</label>
+                <input type="number" class="nav-input" id="water" placeholder="e.g. 162">
+            </div>
+            <div class="input-group">
+                <label>Superplasticizer</label>
+                <input type="number" class="nav-input" id="superplasticizer" placeholder="e.g. 2.5">
+            </div>
+            <div class="input-group">
+                <label>Coarse Aggregate</label>
+                <input type="number" class="nav-input" id="coarse" placeholder="e.g. 1040">
+            </div>
+            <div class="input-group">
+                <label>Fine Aggregate</label>
+                <input type="number" class="nav-input" id="fine" placeholder="e.g. 676">
+            </div>
+            <div class="input-group">
+                <label>Age (Days)</label>
+                <input type="number" class="nav-input" id="age" placeholder="e.g. 28">
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="makePrediction()" id="predictBtn">
+                Predict Strength
+            </button>
+        </div>
+
+        <div id="resultSection" class="result-section hidden">
+            <div class="result-header"><i class="fas fa-check-circle"></i> Prediction Complete</div>
+            <div class="result-value">
+                <span id="strengthValue">0</span>
+                <span class="unit">MPa</span>
+            </div>
+            <p class="result-label">Compressive Strength</p>
+        </div>
+        
+        <div id="loadingSection" class="loading-section hidden">
+            <div class="spinner"></div>
+            <p>Analyzing concrete mix...</p>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // --- ENTER KEY NAVIGATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const inputs = document.querySelectorAll('.nav-input');
+        inputs.forEach((input, index) => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (index === inputs.length - 1) {
+                        document.getElementById('predictBtn').click();
+                    } else {
+                        inputs[index + 1].focus();
+                    }
+                }
+            });
+        });
+    });
+
+    async function makePrediction() {
+        const resultSection = document.getElementById('resultSection');
+        const loadingSection = document.getElementById('loadingSection');
+        const predictBtn = document.getElementById('predictBtn');
+        const strengthVal = document.getElementById('strengthValue');
+
+        // Get values (default to 0 if empty)
+        const getValue = (id) => parseFloat(document.getElementById(id).value) || 0;
+
+        const data = {
+            cement: getValue('cement'),
+            slag: getValue('slag'),
+            flyash: getValue('flyash'),
+            water: getValue('water'),
+            superplasticizer: getValue('superplasticizer'),
+            coarse: getValue('coarse'),
+            fine: getValue('fine'),
+            age: getValue('age'),
+        };
+
+        // UI Updates
+        resultSection.classList.add('hidden');
+        loadingSection.classList.remove('hidden');
+        predictBtn.disabled = true;
+
+        try {
+            // --- FIX: USE RELATIVE PATH ---
+            // This works on Localhost AND Cloud (Render/Hugging Face) automatically
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                throw new Error("Server Error");
+            }
+
+            const result = await response.json();
+            strengthVal.innerText = result.strength;
+            resultSection.classList.remove('hidden');
+
+        } catch (error) {
+            alert("Error: Could not connect to the server.");
+            console.error(error);
+        } finally {
+            loadingSection.classList.add('hidden');
+            predictBtn.disabled = false;
+        }
+    }
+</script>
+
+
+</body>
+</html>
